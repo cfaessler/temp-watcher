@@ -35,7 +35,7 @@ def index():
 @app.route('/readings')
 def get_readings():
     db = get_db()
-    data = dumps(db.readings.find())
+    data = dumps(db.readings.find().sort([('date', -1)]).limit(20))
     return Response(data, mimetype="application/json")
 
 
