@@ -45,7 +45,7 @@
                     },
                     yAxis: {
                         title: {
-                            text: 'Value'
+                            text: 'Temperatur in Grad'
                         },
                         plotLines: [{
                             value: 0,
@@ -77,16 +77,15 @@
         function get_initial_data() {
             $.ajax({
                 url: '/readings', success: function (data) {
+                    chart.series[0].data = [];
                     for (var i = 0; i < data.length; ++i) {
                         var x = data[i].date.$date, y = data[i].value;
                         var p = [parseInt(x), parseInt(y)];
-                        var series = chart.series[0],
-                                shift = series.data.length > 20;
-                        chart.series[0].addPoint(p, true, shift);
+                        chart.series[0].addPoint(p, true, false);
                         console.log(p)
                     }
                     console.log("hallo");
-                    setTimeout(get_initial_data, 1000);
+                    setTimeout(requestData, 1000);
                 }, cache: false
             });
 
@@ -97,16 +96,17 @@
                 url: '/latest',
                 success: function (point) {
                     var x = point[0].date.$date, y = point[0].value;
-
-
                     var p = [parseInt(x), parseInt(y)];
-                    console.log(p);
                     var series = chart.series[0],
                             shift = series.data.length > 20; // shift if the series is
                                                              // longer than 20
 
-                    // add the point
-                    chart.series[0].addPoint(p, true, shift);
+                    // add the point only if new
+                    if (series.data[series.data.length - 1].x !== parseInt(x)) {
+                        chart.series[0].addPoint(p, true, shift);
+                        console.log("new point");
+                        console.log(x);
+                    }
 
                     // call it again after one second
                     setTimeout(requestData, 1000);
