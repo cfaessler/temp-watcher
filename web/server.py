@@ -8,6 +8,14 @@ from requests.exceptions import ConnectionError
 from bson.json_util import dumps
 from pymongo import MongoClient
 from flask import Flask, render_template, request, Response
+import logging
+
+# Config section
+LOGGING_LEVEL = logging.DEBUG
+LOGFILE = 'logging.log'
+
+logging.basicConfig(filename=LOGFILE, level=LOGGING_LEVEL)
+logger = logging.getLogger('TemperatureSensorReading')
 
 MONGODB_URL = 'mongodb://localhost:27017/'
 DB = 'db'
@@ -38,6 +46,7 @@ def add_value():
     db.readings.insert_one(reading)
 
     if value < THRESHOLD and not notified:
+        logging.info('Temperature under threshold, notifying user')
         message = 'Die Temperatur ist %s Grad und hat den Grenzwert überschritten. Bitte Holz nachlegen!' % value
         url = 'https://api.pushover.net/1/messages.json'
         data = {'token': PUSH_API_TOKEN,
@@ -51,6 +60,7 @@ def add_value():
 
     if value > THRESHOLD + HYSTERESIS:
         notified = False
+        logging.info('Resetting notification to not-notified')
     return "success"
 
 
