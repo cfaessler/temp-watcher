@@ -80,7 +80,7 @@
                     chart.series[0].data = [];
                     for (var i = 0; i < data.length; ++i) {
                         var x = data[i].date.$date, y = data[i].value;
-                        var p = [parseInt(x), parseInt(y)];
+                        var p = [parseFloat(x), parseFloat(y)];
                         chart.series[0].addPoint(p, true, false);
                         console.log(p)
                     }
@@ -96,9 +96,9 @@
                 url: '/latest',
                 success: function (point) {
                     var x = point[0].date.$date, y = point[0].value;
-                    var p = [parseInt(x), parseInt(y)];
+                    var p = [parseFloat(x), parseFloat(y)];
                     var series = chart.series[0],
-                            shift = series.data.length > 20; // shift if the series is
+                            shift = false;//series.data.length > 20; // shift if the series is
                                                              // longer than 20
 
                     // add the point only if new
