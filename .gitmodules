@@ -1,0 +1,3 @@
+[submodule "w1thermsensor"]
+	path = w1thermsensor
+	url = https://github.com/timofurrer/w1thermsensor
