@@ -14,18 +14,25 @@
 
 case "$1" in
     start)
-        echo "Starting web server"
-        python web/server.py&
-        echo $! > web_server.pid
+	export PYTHONPATH=/usr/lib/python2.7/dist-packages
+       	source /home/pi/.virtualenvs/term/bin/activate 
+	echo "Starting web server"
+        cd web 
+	python server.py&
+        echo $! > ../web_server.pid
         echo "Starting sensor query loop"
-        python tools/query.py&
-        echo $! > query.pid
+        cd ..
+	cd tools 
+	python query.py&
+        echo $! > ../query.pid
         ;;
     stop)
         echo "Stopping webserver"
         kill -TERM $(cat web_server.pid)
+	rm -f web_server.pid
         echo "Stopping sensor query loop"
         kill -TERM $(cat query.pid)
+	rm -f query.pid
         ;;
     *)
         echo "Usage: /etc/init.d/tempwatcherd start|stop"
