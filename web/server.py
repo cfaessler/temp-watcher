@@ -39,7 +39,8 @@ def get_db():
 
 @app.route('/add')
 def add_value():
-    value = request.args.get('value', '')
+    global notified
+    value = int(request.args.get('value', ''))
     db = get_db()
     reading = {"value": value,
                "date": datetime.datetime.utcnow()}
