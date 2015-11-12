@@ -15,7 +15,7 @@ LOGGING_LEVEL = logging.DEBUG
 LOGFILE = 'logging.log'
 
 logging.basicConfig(filename=LOGFILE, level=LOGGING_LEVEL)
-logger = logging.getLogger('TemperatureSensorReading')
+logger = logging.getLogger('WebServer')
 
 MONGODB_URL = 'mongodb://localhost:27017/'
 DB = 'db'
@@ -25,7 +25,7 @@ notified = False
 
 # Read settings
 settings = ConfigParser.RawConfigParser()
-settings.read('settings.cfg')
+settings.read('../settings.cfg')
 THRESHOLD = settings.getint('Global', 'THRESHOLD_DEGREES')
 HYSTERESIS = settings.getint('Global', 'HYSTERESIS')
 PUSH_API_TOKEN = settings.get('Pushover', 'API_TOKEN')
@@ -48,7 +48,7 @@ def add_value():
 
     if value < THRESHOLD and not notified:
         logging.info('Temperature under threshold, notifying user')
-        message = 'Die Temperatur ist %s Grad und hat den Grenzwert überschritten. Bitte Holz nachlegen!' % value
+        message = 'Die Temperatur ist %s Grad und hat den Grenzwert unterschritten. Bitte Holz nachlegen!' % value
         url = 'https://api.pushover.net/1/messages.json'
         data = {'token': PUSH_API_TOKEN,
                 'user': PUSH_API_USER,
