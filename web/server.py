@@ -39,6 +39,7 @@ def get_db():
 
 @app.route('/add')
 def add_value():
+    global notified
     value = int(request.args.get('value', ''))
     db = get_db()
     reading = {"value": value,
@@ -56,10 +57,9 @@ def add_value():
             requests.post(url, data)
         except ConnectionError:
             pass
-        #NOTIFIED = True
+        notified = True
 
     if value > THRESHOLD + HYSTERESIS:
-        global notified
         notified = False
         logging.info('Resetting notification to not-notified')
     return "success"
