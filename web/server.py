@@ -8,6 +8,7 @@ from requests.exceptions import ConnectionError
 from bson.json_util import dumps
 from pymongo import MongoClient
 from flask import Flask, render_template, request, Response
+from flask_socketio import SocketIO
 import logging
 
 # Config section
@@ -20,7 +21,6 @@ logger = logging.getLogger('WebServer')
 MONGODB_URL = 'mongodb://localhost:27017/'
 DB = 'db'
 
-app = Flask(__name__)
 notified = False
 
 # Read settings
@@ -31,19 +31,32 @@ HYSTERESIS = settings.getint('Global', 'HYSTERESIS')
 PUSH_API_TOKEN = settings.get('Pushover', 'API_TOKEN')
 PUSH_API_USER = settings.get('Pushover', 'API_USER')
 
+app = Flask(__name__)
+app.config['SECRET_KEY'] = settings.get('Global', 'SECRET_KEX')
+socketio = SocketIO(app)
+
 
 def get_db():
     client = MongoClient(MONGODB_URL)
     return client[DB]
 
+def get_latest_reading():
+    latest = get_db().readings.find().sort([('date', -1)]).limit(1)
+    return latest[0]
+
+@socketio.on('connect')
+def on_connect():
+    logging.info('New client with IP {0} connected'.format(request.remote_addr))
 
 @app.route('/add')
 def add_value():
     global notified
     value = float(request.args.get('value', ''))
     db = get_db()
+
+    now = datetime.datetime.utcnow()
     reading = {"value": value,
-               "date": datetime.datetime.utcnow()}
+               "date": now}
     db.readings.insert_one(reading)
 
     if value < THRESHOLD and not notified:
@@ -62,6 +75,12 @@ def add_value():
     if value > THRESHOLD + HYSTERESIS:
         notified = False
         logging.info('Resetting notification to not-notified')
+
+    epoch = datetime.datetime(1970,1,1)
+    timestamp = int((now - epoch).total_seconds()) * 1000
+
+    data = {'date': timestamp, 'value': value}
+    socketio.emit('newData', data, broadcast=True)
     return "success"
 
 
@@ -88,11 +107,8 @@ def get_readings():
 
 @app.route('/latest')
 def get_latest():
-    time = str(datetime.datetime.utcnow())
-    latest = get_db().readings.find().sort([('date', -1)]).limit(1)
-    data = dumps(latest)
-    return Response(data, mimetype="application/json")
+    return Response(get_latest_reading(), mimetype="application/json")
 
 
 if __name__ == "__main__":
-    app.run(host='0.0.0.0', debug=True)
+    socketio.run(app, host='0.0.0.0', debug=True)

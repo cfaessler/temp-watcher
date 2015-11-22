@@ -2,14 +2,23 @@
 <html>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
-    <title>Döme's Temperatur Messer</title>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
 
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+
+    <title>Döme's Temperaturmessung </title>
+    <script type="text/javascript" src="/static/js/socket.io-1.3.7.js"></script>
+    <script type="text/javascript" src="/static/js/moment-with-locales.js"></script>
     <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.2/jquery.min.js"></script>
     <style type="text/css">
         ${demo.css}
     </style>
+
     <script type="text/javascript">
-        var chart;
+
+        var chart, socket;
 
         $(function () {
             $(document).ready(function () {
@@ -37,7 +46,7 @@
                         }
                     },
                     title: {
-                        text: 'Temperatur Messwerte'
+                        text: ''
                     },
                     xAxis: {
                         type: 'datetime',
@@ -67,12 +76,17 @@
                         enabled: false
                     },
                     series: [{
-                        name: 'Random data',
+                        name: 'Boilertemperatur',
                         data: []
                     }]
                 });
             });
         });
+
+        function update_newest(timestamp, temp){
+            $("#newest_temp").html(temp+ "  &deg;C");
+            $("#newest_time").text(moment(timestamp).format('lll'));
+        }
 
         function get_initial_data() {
             $.ajax({
@@ -80,47 +94,71 @@
                     chart.series[0].data = [];
                     for (var i = 0; i < data.length; ++i) {
                         var x = data[i].date.$date, y = data[i].value;
+                        if (i == 0) {
+                            update_newest(x,y);
+                        }
                         var p = [parseFloat(x), parseFloat(y)];
                         chart.series[0].addPoint(p, true, false);
-                        console.log(p)
                     }
-                    console.log("hallo");
-                    setTimeout(requestData, 1000);
                 }, cache: false
             });
 
         }
 
-        function requestData() {
-            $.ajax({
-                url: '/latest',
-                success: function (point) {
-                    var x = point[0].date.$date, y = point[0].value;
-                    var p = [parseFloat(x), parseFloat(y)];
-                    var series = chart.series[0],
-                            shift = series.data.length > 20; // shift if the series is
-                                                             // longer than 20
+        $(document).ready(function () {
 
-                    // add the point only if new
-                    if (series.data[series.data.length - 1].x !== parseInt(x)) {
-                        chart.series[0].addPoint(p, true, shift);
-                        console.log("new point");
-                        console.log(x);
-                    }
-
-                    // call it again after one second
-                    setTimeout(requestData, 1000);
-                },
-                cache: false
+            moment.locale("de");
+            socket = io();
+            socket.on("newData", function (point) {
+                point = eval(point);
+                var x = point.date, y = point.value;
+                var p = [parseFloat(x), parseFloat(y)];
+                var series = chart.series[0],
+                        shift = series.data.length > 20; // shift if the series is
+                                                         // longer than 20
+                chart.series[0].addPoint(p, true, shift);
+                update_newest(x,y);
             });
-        }
+        });
+
     </script>
 </head>
 <body>
+
+<nav class="navbar navbar-inverse navbar-fixed-top">
+    <div class="container">
+        <div class="navbar-header">
+            <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar"
+                    aria-expanded="false" aria-controls="navbar">
+                <span class="sr-only">Toggle navigation</span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+                <span class="icon-bar"></span>
+            </button>
+            <a class="navbar-brand" href="#">Döme's Temperaturmessung</a>
+        </div>
+        <div id="navbar" class="collapse navbar-collapse">
+
+        </div><!--/.nav-collapse -->
+    </div>
+</nav>
+<div class="container">
+    <br><br><br>
+    <h3>Neuste Messung: <span id="newest_temp"></span> (<span id="newest_time"></span>)</h3><br><br>
+        <div id="container" style="min-width: 310px; height: 400px;></div><br>
+</div><!-- /.container -->
+
+
+<!-- Bootstrap core JavaScript
+================================================== -->
+<!-- Placed at the end of the document so the pages load faster -->
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+<script src="../../dist/js/bootstrap.min.js"></script>
+<!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+<script src="../../assets/js/ie10-viewport-bug-workaround.js"></script>
 <script src="/static/js/highcharts.js"></script>
 <script src="/static/js/modules/exporting.js"></script>
 
-<div id="container" style="min-width: 310px; height: 400px; margin: 0 auto"></div>
 
 </body>
 </html>
