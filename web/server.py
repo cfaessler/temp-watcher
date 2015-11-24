@@ -4,49 +4,55 @@
 import datetime
 import ConfigParser
 import requests
+import logging
 from requests.exceptions import ConnectionError
+
 from bson.json_util import dumps
 from pymongo import MongoClient
 from flask import Flask, render_template, request, Response
 from flask_socketio import SocketIO
-import logging
-
-# Config section
-LOGGING_LEVEL = logging.DEBUG
-LOGFILE = 'logging.log'
-
-logging.basicConfig(filename=LOGFILE, level=LOGGING_LEVEL)
-logger = logging.getLogger('WebServer')
-
-MONGODB_URL = 'mongodb://localhost:27017/'
-DB = 'db'
-
-notified = False
 
 # Read settings
 settings = ConfigParser.RawConfigParser()
 settings.read('../settings.cfg')
+
 THRESHOLD = settings.getint('Global', 'THRESHOLD_DEGREES')
 HYSTERESIS = settings.getint('Global', 'HYSTERESIS')
-PUSH_API_TOKEN = settings.get('Pushover', 'API_TOKEN')
-PUSH_API_USER = settings.get('Pushover', 'API_USER')
+PUSHOVER_API_TOKEN = settings.get('Pushover', 'API_TOKEN')
+PUSHOVER_API_USER = settings.get('Pushover', 'API_USER')
+APP_KEY = settings.get('Global', 'SECRET_KEY')
 
+PUSHOVER_URL = 'https://api.pushover.net/1/messages.json'
+MONGODB_URL = 'mongodb://localhost:27017/'
+DB = 'db'
+
+# Logging setup
+LOGGING_LEVEL = logging.DEBUG
+LOGFILE = 'logging.log'
+logging.basicConfig(filename=LOGFILE, level=LOGGING_LEVEL)
+logger = logging.getLogger('WebServer')
+
+# Flask and socketio setup
 app = Flask(__name__)
-app.config['SECRET_KEY'] = settings.get('Global', 'SECRET_KEX')
+app.config['SECRET_KEY'] = APP_KEY
 socketio = SocketIO(app)
+notified = False
 
 
 def get_db():
     client = MongoClient(MONGODB_URL)
     return client[DB]
 
+
 def get_latest_reading():
     latest = get_db().readings.find().sort([('date', -1)]).limit(1)
     return latest[0]
 
+
 @socketio.on('connect')
 def on_connect():
     logging.info('New client with IP {0} connected'.format(request.remote_addr))
+
 
 @app.route('/add')
 def add_value():
@@ -62,21 +68,22 @@ def add_value():
     if value < THRESHOLD and not notified:
         logging.info('Temperature under threshold, notifying user')
         message = 'Die Temperatur ist %s Grad und hat den Grenzwert unterschritten. Bitte Holz nachlegen!' % value
-        url = 'https://api.pushover.net/1/messages.json'
-        data = {'token': PUSH_API_TOKEN,
-                'user': PUSH_API_USER,
+
+        data = {'token': PUSHOVER_API_TOKEN,
+                'user': PUSHOVER_API_USER,
                 'message': message}
         try:
-            requests.post(url, data)
+            requests.post(PUSHOVER_URL, data)
         except ConnectionError:
-            pass
-        notified = True
+            logging.error('Could not send push message due to connection error')
+        else:
+            notified = True
 
     if value > THRESHOLD + HYSTERESIS:
         notified = False
         logging.info('Resetting notification to not-notified')
 
-    epoch = datetime.datetime(1970,1,1)
+    epoch = datetime.datetime(1970, 1, 1)
     timestamp = int((now - epoch).total_seconds()) * 1000
 
     data = {'date': timestamp, 'value': value}
@@ -87,8 +94,8 @@ def add_value():
 @app.route('/settings')
 def config():
     return render_template('config.htm',
-                           API_TOKEN=PUSH_API_TOKEN,
-                           API_USER=PUSH_API_USER,
+                           API_TOKEN=PUSHOVER_API_TOKEN,
+                           API_USER=PUSHOVER_API_USER,
                            THRESHOLD=THRESHOLD,
                            HYSTERESIS=HYSTERESIS)
 
