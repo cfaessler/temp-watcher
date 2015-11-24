@@ -1,3 +1,4 @@
 settings.cfg
 .gitmodules
 *.pyc
+*.log
