@@ -2,7 +2,6 @@
 # -*- coding: utf-8 -*-
 
 import datetime
-import ConfigParser
 import requests
 import logging
 from requests.exceptions import ConnectionError
@@ -12,15 +11,11 @@ from pymongo import MongoClient
 from flask import Flask, render_template, request, Response
 from flask_socketio import SocketIO
 
-# Read settings
-settings = ConfigParser.RawConfigParser()
-settings.read('../settings.cfg')
+from settings import SettingsWrapper
 
-THRESHOLD = settings.getint('Global', 'THRESHOLD_DEGREES')
-HYSTERESIS = settings.getint('Global', 'HYSTERESIS')
-PUSHOVER_API_TOKEN = settings.get('Pushover', 'API_TOKEN')
-PUSHOVER_API_USER = settings.get('Pushover', 'API_USER')
-APP_KEY = settings.get('Global', 'SECRET_KEY')
+# Read settings
+settings = SettingsWrapper()
+
 
 PUSHOVER_URL = 'https://api.pushover.net/1/messages.json'
 MONGODB_URL = 'mongodb://localhost:27017/'
@@ -34,7 +29,7 @@ logger = logging.getLogger('WebServer')
 
 # Flask and socketio setup
 app = Flask(__name__)
-app.config['SECRET_KEY'] = APP_KEY
+app.config['SECRET_KEY'] = settings.APP_KEY
 socketio = SocketIO(app)
 notified = False
 
@@ -65,12 +60,12 @@ def add_value():
                "date": now}
     db.readings.insert_one(reading)
 
-    if value < THRESHOLD and not notified:
+    if value < settings.THRESHOLD and not notified:
         logging.info('Temperature under threshold, notifying user')
         message = 'Die Temperatur ist %s Grad und hat den Grenzwert unterschritten. Bitte Holz nachlegen!' % value
 
-        data = {'token': PUSHOVER_API_TOKEN,
-                'user': PUSHOVER_API_USER,
+        data = {'token': settings.PUSHOVER_API_TOKEN,
+                'user': settings.PUSHOVER_API_USER,
                 'message': message}
         try:
             requests.post(PUSHOVER_URL, data)
@@ -79,7 +74,7 @@ def add_value():
         else:
             notified = True
 
-    if value > THRESHOLD + HYSTERESIS:
+    if value > settings.THRESHOLD + settings.HYSTERESIS:
         notified = False
         logging.info('Resetting notification to not-notified')
 
@@ -94,10 +89,10 @@ def add_value():
 @app.route('/settings')
 def config():
     return render_template('config.htm',
-                           API_TOKEN=PUSHOVER_API_TOKEN,
-                           API_USER=PUSHOVER_API_USER,
-                           THRESHOLD=THRESHOLD,
-                           HYSTERESIS=HYSTERESIS)
+                           API_TOKEN=settings.PUSHOVER_API_TOKEN,
+                           API_USER=settings.PUSHOVER_API_USER,
+                           THRESHOLD=settings.THRESHOLD,
+                           HYSTERESIS=settings.HYSTERESIS)
 
 
 @app.route('/index')
