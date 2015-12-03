@@ -1,6 +1,5 @@
-<html>
-<title>Döme's Temperatur Anzeige</title>
-
+{% extends "base.html" %}
+{% block content %}
 <body>
 <form method="POST">
     API_USER: <input name="API_USER" value="{{ API_USER }}" size="50"><br>
@@ -12,6 +11,5 @@
     Änderungen wurden gespeichert
     {% endif %}
 </form>
-</body>
-</html>
+{% endblock %}
 
