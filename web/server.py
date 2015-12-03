@@ -5,17 +5,14 @@ import datetime
 import requests
 import logging
 from requests.exceptions import ConnectionError
-
 from bson.json_util import dumps
 from pymongo import MongoClient
 from flask import Flask, render_template, request, Response
 from flask_socketio import SocketIO
-
 from settings import SettingsWrapper
 
 # Read settings
 settings = SettingsWrapper()
-
 
 PUSHOVER_URL = 'https://api.pushover.net/1/messages.json'
 MONGODB_URL = 'mongodb://localhost:27017/'
@@ -86,7 +83,7 @@ def add_value():
     return "success"
 
 
-@app.route('/settings', methods=['POST','GET'])
+@app.route('/settings', methods=['POST', 'GET'])
 def config():
     saved = False
     if request.method == 'POST':
@@ -94,6 +91,7 @@ def config():
         settings.set('Pushover', 'API_USER', request.form['API_USER'])
         settings.set('Global', 'THRESHOLD', request.form['THRESHOLD'])
         settings.set('Global', 'HYSTERESIS', request.form['HYSTERESIS'])
+        settings.set('Global', 'INTERVAL', request.form['INTERVAL'])
         settings.update_settings()
         saved = True
 
@@ -101,7 +99,8 @@ def config():
                            API_TOKEN=settings.PUSHOVER_API_TOKEN,
                            API_USER=settings.PUSHOVER_API_USER,
                            THRESHOLD=settings.THRESHOLD,
-                           HYSTERESIS=settings.HYSTERESIS, settings_saved=saved)
+                           HYSTERESIS=settings.HYSTERESIS, INTERVAL=settings.INTERVAL,
+                           settings_saved=saved)
 
 
 @app.route('/index')
