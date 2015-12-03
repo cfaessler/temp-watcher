@@ -13,3 +13,8 @@ class SettingsWrapper:
         self.PUSHOVER_API_TOKEN = self.settings.get('Pushover', 'API_TOKEN')
         self.PUSHOVER_API_USER = self.settings.get('Pushover', 'API_USER')
         self.APP_KEY = self.settings.get('Global', 'SECRET_KEY')
+        with open('../settings.cfg', 'wb') as config_file:
+            self.settings.write(config_file)
+
+    def set(self, section, option, value):
+        self.settings.set(section, option, value)

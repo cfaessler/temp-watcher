@@ -86,13 +86,22 @@ def add_value():
     return "success"
 
 
-@app.route('/settings')
+@app.route('/settings', methods=['POST','GET'])
 def config():
+    saved = False
+    if request.method == 'POST':
+        settings.set('Pushover', 'API_TOKEN', request.form['API_TOKEN'])
+        settings.set('Pushover', 'API_USER', request.form['API_USER'])
+        settings.set('Global', 'THRESHOLD', request.form['THRESHOLD'])
+        settings.set('Global', 'HYSTERESIS', request.form['HYSTERESIS'])
+        settings.update_settings()
+        saved = True
+
     return render_template('config.htm',
                            API_TOKEN=settings.PUSHOVER_API_TOKEN,
                            API_USER=settings.PUSHOVER_API_USER,
                            THRESHOLD=settings.THRESHOLD,
-                           HYSTERESIS=settings.HYSTERESIS)
+                           HYSTERESIS=settings.HYSTERESIS, settings_saved=saved)
 
 
 @app.route('/index')
