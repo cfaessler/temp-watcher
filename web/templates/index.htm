@@ -44,7 +44,9 @@
                         value: 0,
                         width: 1,
                         color: '#808080'
-                    }]
+                    }],
+                    min: 20,
+                    max: 90
                 },
                 tooltip: {
                     formatter: function () {
@@ -97,7 +99,7 @@
             var x = point.date, y = point.value;
             var p = [parseFloat(x), parseFloat(y)];
             var series = chart.series[0];
-            var shift = series.data.length > 20; // shift if the series is longer than 20
+            var shift = series.data.length > 300; // shift if the series is longer than 20
             chart.series[0].addPoint(p, true, shift);
             update_newest(x, y);
         });
