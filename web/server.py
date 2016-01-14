@@ -4,6 +4,7 @@
 import datetime
 import requests
 import logging
+from functools import wraps
 from requests.exceptions import ConnectionError
 from bson.json_util import dumps
 from pymongo import MongoClient
@@ -31,6 +32,33 @@ socketio = SocketIO(app)
 notified = False
 
 
+
+
+def check_auth(username, password):
+    """This function is called to check if a username /
+    password combination is valid.
+    """
+    return username == settings.USER and password == settings.PASSWORD
+
+def authenticate():
+    """Sends a 401 response that enables basic auth"""
+    return Response(
+    'Falsche Logindaten.\n'
+    'Du hast hier nichts zu suchen!', 401,
+    {'WWW-Authenticate': 'Basic realm="Login erforderlich"'})
+
+
+def requires_auth(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not auth or not check_auth(auth.username, auth.password):
+            return authenticate()
+        return f(*args, **kwargs)
+    return decorated
+
+
+
 def get_db():
     client = MongoClient(MONGODB_URL)
     return client[DB]
@@ -47,6 +75,7 @@ def on_connect():
 
 
 @app.route('/add')
+@requires_auth
 def add_value():
     global notified
     value = float(request.args.get('value', ''))
@@ -84,6 +113,7 @@ def add_value():
 
 
 @app.route('/settings', methods=['POST', 'GET'])
+@requires_auth
 def config():
     saved = False
     if request.method == 'POST':
@@ -104,18 +134,21 @@ def config():
 
 
 @app.route('/index')
+@requires_auth
 def index():
     return render_template('index.htm')
 
 
 @app.route('/readings')
+@requires_auth
 def get_readings():
     db = get_db()
-    data = dumps(db.readings.find().sort([('date', -1)]).limit(20))
+    data = dumps(db.readings.find().sort([('date', -1)]).limit(300))
     return Response(data, mimetype="application/json")
 
 
 @app.route('/latest')
+@requires_auth
 def get_latest():
     return Response(get_latest_reading(), mimetype="application/json")
 

@@ -13,7 +13,9 @@ class SettingsWrapper:
         self.PUSHOVER_API_TOKEN = self.settings.get('Pushover', 'API_TOKEN')
         self.PUSHOVER_API_USER = self.settings.get('Pushover', 'API_USER')
         self.APP_KEY = self.settings.get('Global', 'SECRET_KEY')
-        self.INTERVAL = self.settings.get('Global', 'INTERVAL')
+        self.INTERVAL = self.settings.getint('Global', 'INTERVAL')
+        self.USER = self.settings.get('Global', 'USER')
+        self.PASSWORD = self.settings.get('Global', 'PASSWORD')
         with open('../settings.cfg', 'wb') as config_file:
             self.settings.write(config_file)
 
