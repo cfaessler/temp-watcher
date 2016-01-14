@@ -24,7 +24,7 @@ while True:
     temp = sensor.get_temperature()
     logger.info("Temperature is %i" % temp)
     try:
-        r = requests.get('http://%s/add?value=%s' % (WEB_SERVER, temp))
+        r = requests.get('http://%s/add?value=%s' % (WEB_SERVER, temp), auth=(settings.get('Global','User'), settings.get('Global','Password')))
     except ConnectionError as e:
         logger.error("Could not connect to server")
     time.sleep(INTERVAL_SECS)
