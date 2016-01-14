@@ -119,7 +119,7 @@ def config():
     if request.method == 'POST':
         settings.set('Pushover', 'API_TOKEN', request.form['API_TOKEN'])
         settings.set('Pushover', 'API_USER', request.form['API_USER'])
-        settings.set('Global', 'THRESHOLD', request.form['THRESHOLD'])
+        settings.set('Global', 'THRESHOLD_DEGREES', request.form['THRESHOLD'])
         settings.set('Global', 'HYSTERESIS', request.form['HYSTERESIS'])
         settings.set('Global', 'INTERVAL', request.form['INTERVAL'])
         settings.update_settings()
